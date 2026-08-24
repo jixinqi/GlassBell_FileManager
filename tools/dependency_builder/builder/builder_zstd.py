@@ -2,8 +2,8 @@
 
 import sys
 import pathlib
-dependency_builder_dir = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(dependency_builder_dir))
+dependency_builder_dir = pathlib.Path(__file__).parent.parent
+sys.path.append(str(dependency_builder_dir))
 
 import environment as environment
 
@@ -12,9 +12,9 @@ if __package__ in (None, ""):
 else:
     from .builder_base import builder_base
 
-class builder_json(builder_base):
+class builder_zstd(builder_base):
     def __init__(self, env:environment.base):
-        super().__init__("json", env)
+        super().__init__("zstd", env)
 
     def build_impl(self):
         if(isinstance(self.env, environment.win)):
@@ -24,17 +24,27 @@ class builder_json(builder_base):
         else:
             raise RuntimeError(f"Unsupported environment: {type(self.env).__name__}")
 
+        build_shared = "ON" if self.env.link_type == environment.LinkType.SHARED else "OFF"
+        build_static = "ON" if self.env.link_type == environment.LinkType.STATIC else "OFF"
+        cmake_source_dir = self.module_pre_build_dir / "build" / "cmake"
+
         self.env.run_commands(
             commands = [
                 f'cmake -B "{self.module_build_dir.as_posix()}"'
-                    f' -S "{self.module_pre_build_dir.as_posix()}"'
+                    f' -S "{cmake_source_dir.as_posix()}"'
                     f' -DCMAKE_INSTALL_PREFIX="{self.module_install_dir.as_posix()}"'
                     f' -DCMAKE_BUILD_TYPE={self.env.build_type.value}'
 
                     f'{cmake_platform_options}'
 
-                    f' -DJSON_BuildTests=OFF'
-                    f' -DJSON_Install=ON'
+                    f' -DBUILD_SHARED_LIBS={build_shared}'
+                    f' -DZSTD_BUILD_CONTRIB=OFF'
+                    f' -DZSTD_BUILD_TESTS=OFF'
+                    f' -DZSTD_LEGACY_SUPPORT=OFF'
+                    f' -DZSTD_BUILD_PROGRAMS=OFF'
+                    f' -DZSTD_PROGRAMS_LINK_SHARED={build_shared}'
+                    f' -DZSTD_BUILD_SHARED={build_shared}'
+                    f' -DZSTD_BUILD_STATIC={build_static}'
                     ,
                 f'cmake --build   "{self.module_build_dir.as_posix()}" --config={self.env.build_type.value}',
                 f'cmake --install "{self.module_build_dir.as_posix()}" --config={self.env.build_type.value}'
@@ -46,7 +56,7 @@ class builder_json(builder_base):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Build and install JSON for Modern C++")
+    parser = argparse.ArgumentParser(description="Build and install zstd")
     parser.add_argument("--build-type", choices=[build_type.value for build_type in environment.BuildType], required=True)
     parser.add_argument("--link-type", choices=[link_type.value for link_type in environment.LinkType], required=True)
     args = parser.parse_args()
@@ -55,8 +65,7 @@ def main():
         build_type=environment.BuildType(args.build_type),
         link_type=environment.LinkType(args.link_type)
     )
-    builder_json(env).build()
+    builder_zstd(env).build()
 
 if(__name__ == "__main__"):
     main()
-

@@ -8,12 +8,15 @@ import shutil
 import urllib.request
 import zipfile
 
-dependency_builder_dir = pathlib.Path(__file__).parent.parent
-sys.path.append(str(dependency_builder_dir))
+dependency_builder_dir = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(dependency_builder_dir))
 
 import environment as environment
 
-from .builder_base import builder_base
+if __package__ in (None, ""):
+    from builder_base import builder_base
+else:
+    from .builder_base import builder_base
 
 class builder_openssl(builder_base):
     def __init__(self, env):

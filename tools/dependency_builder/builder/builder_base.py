@@ -5,7 +5,8 @@ import abc
 import os
 import sys
 import pathlib
-sys.path.append(pathlib.Path(__file__).parent)
+dependency_builder_dir = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(dependency_builder_dir))
 
 import environment as environment
 
