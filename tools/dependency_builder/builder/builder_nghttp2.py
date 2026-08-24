@@ -17,15 +17,15 @@ class builder_nghttp2(builder_base):
         super().__init__("nghttp2", env)
 
     def build_impl(self):
+        build_shared = "ON" if self.env.link_type == environment.LinkType.SHARED else "OFF"
+        build_static = "ON" if self.env.link_type == environment.LinkType.STATIC else "OFF"
+
         if(isinstance(self.env, environment.win)):
             cmake_platform_options = ' -DCMAKE_CXX_FLAGS_INIT="/utf-8"'
         elif(isinstance(self.env, environment.linux)):
             cmake_platform_options = ""
         else:
             raise RuntimeError(f"Unsupported environment: {type(self.env).__name__}")
-
-        build_shared = "ON" if self.env.link_type == environment.LinkType.SHARED else "OFF"
-        build_static = "ON" if self.env.link_type == environment.LinkType.STATIC else "OFF"
 
         self.env.run_commands(
             commands = [

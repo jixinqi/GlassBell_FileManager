@@ -22,5 +22,12 @@ def main():
     builder.json(env).build()
     builder.spdlog(env).build()
 
+    builder.zlib(env).build()
+    builder.zstd(env).build()
+
+    builder.ngtcp2(env).build()
+    builder.nghttp2(env).build()
+    builder.nghttp3(env).build()
+
 if(__name__ == "__main__"):
     main()

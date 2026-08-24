@@ -19,36 +19,37 @@ class builder_ngtcp2(builder_base):
     def build_impl(self):
         build_shared = "ON" if self.env.link_type == environment.LinkType.SHARED else "OFF"
         build_static = "ON" if self.env.link_type == environment.LinkType.STATIC else "OFF"
+        openssl_dir = self.env.install_dir / "openssl"
 
         if(isinstance(self.env, environment.win)):
-            openssl_dir = self.env.install_dir / "openssl"
-            crypto_options = (
-                f' -DOPENSSL_ROOT_DIR="{openssl_dir.as_posix()}"'
-                f' -DOPENSSL_USE_STATIC_LIBS={build_static}'
-                f' -DCMAKE_PREFIX_PATH="{openssl_dir.as_posix()}"'
-                f' -DENABLE_OPENSSL=ON'
-            )
             cmake_platform_options = ' -DCMAKE_CXX_FLAGS_INIT="/utf-8"'
+            cmake_environment_options = ""
         elif(isinstance(self.env, environment.linux)):
-            crypto_options = " -DENABLE_OPENSSL=OFF"
             cmake_platform_options = ""
+            openssl_pkgconfig_dir = openssl_dir / "lib64" / "pkgconfig"
+            cmake_environment_options = f'PKG_CONFIG_PATH="{openssl_pkgconfig_dir.as_posix()}" '
         else:
             raise RuntimeError(f"Unsupported environment: {type(self.env).__name__}")
 
         self.env.run_commands(
             commands = [
+                f'{cmake_environment_options}'
                 f'cmake -B "{self.module_build_dir.as_posix()}"'
                     f' -S "{self.module_pre_build_dir.as_posix()}"'
                     f' -DCMAKE_INSTALL_PREFIX="{self.module_install_dir.as_posix()}"'
                     f' -DCMAKE_BUILD_TYPE={self.env.build_type.value}'
 
-                    f'{crypto_options}'
                     f'{cmake_platform_options}'
 
                     f' -DENABLE_LIB_ONLY=ON'
                     f' -DBUILD_TESTING=OFF'
                     f' -DENABLE_SHARED_LIB={build_shared}'
                     f' -DENABLE_STATIC_LIB={build_static}'
+
+                    f' -DENABLE_OPENSSL=ON'
+                    f' -DOPENSSL_ROOT_DIR="{openssl_dir.as_posix()}"'
+                    f' -DOPENSSL_USE_STATIC_LIBS={build_static}'
+                    f' -DCMAKE_PREFIX_PATH="{openssl_dir.as_posix()}"'
                     ,
                 f'cmake --build   "{self.module_build_dir.as_posix()}" --config={self.env.build_type.value}',
                 f'cmake --install "{self.module_build_dir.as_posix()}" --config={self.env.build_type.value}'
